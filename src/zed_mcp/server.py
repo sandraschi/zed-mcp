@@ -1,4 +1,5 @@
 """FastMCP server for Zed editor — settings, extensions, themes, projects, diagnostics."""
+
 from __future__ import annotations
 
 import json
@@ -193,11 +194,13 @@ async def zed_list_extensions(ctx: Any = None) -> dict:
             if manifest.is_file():
                 try:
                     meta = json.loads(manifest.read_text(encoding="utf-8"))
-                    exts.append({
-                        "id": entry.name,
-                        "name": meta.get("name", entry.name),
-                        "version": meta.get("version", ""),
-                    })
+                    exts.append(
+                        {
+                            "id": entry.name,
+                            "name": meta.get("name", entry.name),
+                            "version": meta.get("version", ""),
+                        }
+                    )
                 except (json.JSONDecodeError, OSError):
                     exts.append({"id": entry.name})
     return {"extensions": exts, "count": len(exts)}
@@ -220,10 +223,15 @@ async def zed_install_extension(extension_id: str, ctx: Any = None) -> dict:
     if not cli:
         return {"success": False, "error": "zed CLI not found"}
     try:
-        subprocess.run([cli, "--install", extension_id], check=True, timeout=60, capture_output=True)
+        subprocess.run(
+            [cli, "--install", extension_id], check=True, timeout=60, capture_output=True
+        )
         return {"success": True, "extension": extension_id}
     except subprocess.CalledProcessError as e:
-        return {"success": False, "error": f"Install failed: {e.stderr.decode() if e.stderr else e}"}
+        return {
+            "success": False,
+            "error": f"Install failed: {e.stderr.decode() if e.stderr else e}",
+        }
     except FileNotFoundError:
         return {"success": False, "error": "zed CLI not found"}
 
@@ -243,6 +251,7 @@ async def zed_uninstall_extension(extension_id: str, ctx: Any = None) -> dict:
         return {"success": False, "error": f"Extension '{extension_id}' not installed"}
     try:
         import shutil
+
         shutil.rmtree(ext_dir)
         return {"success": True, "extension": extension_id}
     except OSError as e:
@@ -357,7 +366,10 @@ async def zed_help(ctx: Any = None) -> dict:
     return {
         "tools": [
             {"name": "zed_get_settings", "description": "Read all Zed settings"},
-            {"name": "zed_set_setting", "description": "Set a single setting (theme, font_size, etc.)"},
+            {
+                "name": "zed_set_setting",
+                "description": "Set a single setting (theme, font_size, etc.)",
+            },
             {"name": "zed_get_theme", "description": "Get current theme"},
             {"name": "zed_set_theme", "description": "Change theme"},
             {"name": "zed_list_themes", "description": "List all installed themes"},
