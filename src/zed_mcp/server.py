@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import os
@@ -264,8 +265,8 @@ async def zed_install_extension(
     if not cli:
         return _error_response("zed CLI not found", error_type="cli_not_found")
     try:
-        subprocess.run(
-            [cli, "--install", extension_id], check=True, timeout=60, capture_output=True
+        await asyncio.to_thread(
+            subprocess.run, [cli, "--install", extension_id], check=True, timeout=60, capture_output=True
         )
         return {
             "success": True,
@@ -296,7 +297,7 @@ async def zed_uninstall_extension(
     if not ext_dir.is_dir():
         return _error_response(f"Extension '{extension_id}' not installed", error_type="not_found")
     try:
-        shutil.rmtree(ext_dir)
+        await asyncio.to_thread(shutil.rmtree, ext_dir)
         return {
             "success": True,
             "extension": extension_id,
@@ -332,7 +333,7 @@ async def zed_open_file(
     if not cli:
         return _error_response("zed CLI not found", error_type="cli_not_found")
     try:
-        subprocess.run([cli, str(target)], check=True, timeout=10)
+        await asyncio.to_thread(subprocess.run, [cli, str(target)], check=True, timeout=10)
         return {"success": True, "target": file_path, "message": f"Opened {file_path} in Zed"}
     except (subprocess.CalledProcessError, FileNotFoundError) as e:
         return _error_response(str(e), error_type="open_failed")
@@ -384,7 +385,9 @@ async def zed_version(ctx: Any = None) -> dict:
     if not cli:
         return {"version": "unknown", "path": "", "message": "zed CLI not found"}
     try:
-        result = subprocess.run([cli, "--version"], capture_output=True, text=True, timeout=5)
+        result = await asyncio.to_thread(
+            subprocess.run, [cli, "--version"], capture_output=True, text=True, timeout=5
+        )
         v = result.stdout.strip() or result.stderr.strip()
         return {"version": v, "path": cli, "message": f"Zed {v} at {cli}"}
     except (subprocess.CalledProcessError, FileNotFoundError) as e:
@@ -454,7 +457,10 @@ async def zed_help(ctx: Any = None) -> dict:
             {"name": "zed_snippets", "description": "List, get, create, delete snippets"},
             {"name": "zed_git_blame", "description": "Git blame annotations for a file"},
             {"name": "zed_tasks", "description": "List or run .zed/tasks.json tasks"},
-            {"name": "zed_layout", "description": "Inspect/set settings-backed layout knobs; set_preset is honest-fail (no external hook exists)"},
+            {
+                "name": "zed_layout",
+                "description": "Inspect/set settings-backed layout knobs; set_preset is honest-fail (no external hook exists)",
+            },
         ],
         "config_dir": str(_ZED_DIR),
         "extensions_dir": str(_ZED_EXTENSIONS),
@@ -761,7 +767,8 @@ async def zed_search_project(
         }
 
     try:
-        result = subprocess.run(
+        result = await asyncio.to_thread(
+            subprocess.run,
             [rg, "--no-heading", "--line-number", "--max-count", "3", "-i", query, project_path],
             capture_output=True,
             text=True,
@@ -1079,7 +1086,8 @@ async def zed_git_blame(
         return _error_response(f"Not in a git repository: {file_path}", error_type="not_in_repo")
 
     try:
-        result = subprocess.run(
+        result = await asyncio.to_thread(
+            subprocess.run,
             ["git", "blame", "--line-porcelain", str(target)],
             capture_output=True,
             text=True,
@@ -1220,8 +1228,9 @@ async def zed_tasks(
         cmd = task.get("command", "")
         args = task.get("args", [])
         try:
-            subprocess.run(
-                [cli, "--run-task", task_name], check=True, timeout=120, cwd=project_path
+            # Tasks run up to 120s — never on the event loop.
+            await asyncio.to_thread(
+                subprocess.run, [cli, "--run-task", task_name], check=True, timeout=120, cwd=project_path
             )
             return {
                 "success": True,
@@ -1252,7 +1261,7 @@ async def zed_tasks(
 _KNOWN_LAYOUT_SETTINGS: dict[str, str] = {
     "active_pane_modifiers.border_size": "Size of the border around the active pane. 0 disables it.",
     "active_pane_modifiers.inactive_opacity": "Opacity (0.0-1.0) of inactive panes relative to the active one.",
-    "bottom_dock_layout": "Bottom dock layout relative to left/right docks: \'contained\' or \'full\'.",
+    "bottom_dock_layout": "Bottom dock layout relative to left/right docks: 'contained' or 'full'.",
     "drop_target_size": "Relative size (0-0.5) of the drop zone that triggers a split when a file is dragged onto a pane.",
 }
 
@@ -1263,9 +1272,7 @@ _LAYOUT_PRESETS = {"agentic", "classic"}
 async def zed_layout(
     operation: Annotated[
         str,
-        Field(
-            description="Operation: \'list_options\' (default), \'get\', \'set\', \'set_preset\'."
-        ),
+        Field(description="Operation: 'list_options' (default), 'get', 'set', 'set_preset'."),
     ] = "list_options",
     key: Annotated[
         str | None,
@@ -1277,7 +1284,7 @@ async def zed_layout(
     ] = None,
     preset: Annotated[
         str | None,
-        Field(description="\'agentic\' or \'classic\'. Required for: set_preset."),
+        Field(description="'agentic' or 'classic'. Required for: set_preset."),
     ] = None,
     ctx: Any = None,
 ) -> dict:
@@ -1315,7 +1322,7 @@ async def zed_layout(
             "message": (
                 "Known settings-backed layout keys. Exact key paths sourced from Zed's "
                 "public docs, not independently verified against a live settings schema "
-                "dump. Cross-check with \'zed: open default settings\' in Zed\'s command "
+                "dump. Cross-check with 'zed: open default settings' in Zed's command "
                 "palette before relying on these for anything critical."
             ),
         }
@@ -1370,7 +1377,7 @@ async def zed_layout(
         node[parts[-1]] = coerced
         ok = _write_settings(settings)
         if not ok:
-            return _error_response(f"Failed to write layout key \'{key}\'", error_type="write_error")
+            return _error_response(f"Failed to write layout key '{key}'", error_type="write_error")
         return {
             "success": True,
             "operation": "set",
@@ -1387,7 +1394,9 @@ async def zed_layout(
                 "message": f"Unknown preset: {preset}",
             }
         action_name = (
-            "workspace: use agentic layout" if preset == "agentic" else "workspace: use classic layout"
+            "workspace: use agentic layout"
+            if preset == "agentic"
+            else "workspace: use classic layout"
         )
         return {
             "success": False,
@@ -1395,8 +1404,8 @@ async def zed_layout(
             "data": {"preset": preset, "manual_action": action_name},
             "message": (
                 f"Not supported externally: Zed has no CLI/API hook to trigger this "
-                f"action from outside a running instance. Run \'{action_name}\' from "
-                f"Zed\'s command palette (Ctrl/Cmd+Shift+P) manually."
+                f"action from outside a running instance. Run '{action_name}' from "
+                f"Zed's command palette (Ctrl/Cmd+Shift+P) manually."
             ),
         }
 
