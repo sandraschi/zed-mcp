@@ -48,7 +48,13 @@ def _error_response(error: str, error_type: str = "general", **kwargs: Any) -> d
 def _zed_cli() -> str | None:
     for candidate in [
         os.path.expanduser("~/.local/bin/zed"),
-        "C:/Users/sandr/AppData/Local/Programs/Zed Preview/bin/zed.exe",
+        os.path.join(
+            os.environ.get("LOCALAPPDATA", os.path.expanduser("~/AppData/Local")),
+            "Programs",
+            "Zed Preview",
+            "bin",
+            "zed.exe",
+        ),
         "zed",
     ]:
         if Path(candidate).is_file() or candidate == "zed":
@@ -266,7 +272,11 @@ async def zed_install_extension(
         return _error_response("zed CLI not found", error_type="cli_not_found")
     try:
         await asyncio.to_thread(
-            subprocess.run, [cli, "--install", extension_id], check=True, timeout=60, capture_output=True
+            subprocess.run,
+            [cli, "--install", extension_id],
+            check=True,
+            timeout=60,
+            capture_output=True,
         )
         return {
             "success": True,
@@ -1230,7 +1240,11 @@ async def zed_tasks(
         try:
             # Tasks run up to 120s — never on the event loop.
             await asyncio.to_thread(
-                subprocess.run, [cli, "--run-task", task_name], check=True, timeout=120, cwd=project_path
+                subprocess.run,
+                [cli, "--run-task", task_name],
+                check=True,
+                timeout=120,
+                cwd=project_path,
             )
             return {
                 "success": True,
