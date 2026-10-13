@@ -1,0 +1,105 @@
+# zed-mcp — Full Reference
+
+## Overview
+
+zed-mcp is a FastMCP 3.4+ server that bridges AI assistants with the Zed editor. It manages settings, themes, extensions, recent projects, and external MCP agents through Zed's file system and CLI.
+
+## Tools
+
+### zed_get_settings
+Read the full Zed settings.json.
+Returns: `{"settings": dict, "path": str}`
+
+### zed_set_setting
+Set a single Zed setting (theme, font_size, tab_size). Merges into existing settings.json. Creates a backup before writing.
+- `key` (str): Setting name
+- `value` (str): Setting value (auto-coerced to int/float)
+Returns: `{"success": bool, "key": str, "value": any}`
+
+### zed_get_theme
+Get the current Zed theme from settings.
+Returns: `{"theme": str}`
+
+### zed_set_theme
+Change the Zed theme by writing to settings.json.
+- `theme_name` (str): Theme name
+Returns: `{"success": bool, "theme": str}`
+
+### zed_list_themes
+List all installed themes available in Zed. Scans the themes directory and extension-installed themes.
+Returns: `{"themes": [str], "count": int}`
+
+### zed_list_extensions
+List all installed Zed extensions with name and version.
+Returns: `{"extensions": [{"id": str, "name": str, "version": str}], "count": int}`
+
+### zed_install_extension
+Install a Zed extension from the marketplace. Uses `zed --install <extension_id>` CLI command.
+- `extension_id` (str): Marketplace extension ID
+Returns: `{"success": bool, "extension": str}`
+
+### zed_uninstall_extension
+Uninstall a Zed extension by removing its directory.
+- `extension_id` (str): Extension ID to remove
+Returns: `{"success": bool, "extension": str}`
+
+### zed_open_file
+Open a file or project directory in Zed editor.
+- `file_path` (str): Path to file or directory
+Returns: `{"success": bool, "target": str}`
+
+### zed_get_recent_projects
+Read recent Zed projects from the local SQLite database. Queries the latest Zed release DB.
+Returns: `{"projects": [{"path": str, "name": str}], "count": int}`
+
+### zed_version
+Get the installed Zed editor version. Probes the zed CLI for version string.
+Returns: `{"version": str, "path": str}`
+
+### zed_list_agents
+List installed external Zed agents (MCP servers configured in Zed). Reads the external_agents directory.
+Returns: `{"agents": [{"name": str, "config": dict}], "count": int}`
+
+### zed_help
+Show all available zed-mcp tools and usage information.
+Returns: `{"tools": [...], "config_dir": str, "extensions_dir": str}`
+
+## Architecture
+
+- **Transport**: stdio only. No HTTP/SSE mode.
+- **Config paths**: Reads from `%APPDATA%\Zed` (overridable via `ZED_CONFIG_DIR` env var)
+- **CLI**: Uses `zed --install` and `zed <path>` for installs and file opening
+- **Database**: Queries Zed's SQLite DB at `%LOCALAPPDATA%\Zed\db\*\db.sqlite` for recent projects
+
+## Requirements
+
+- Python 3.11+
+- Windows (Zed paths use %APPDATA%)
+- Zed editor installed (for CLI-based operations)
+- `zed` CLI on PATH or at standard install location
+
+## Environment
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `ZED_CONFIG_DIR` | `%APPDATA%\Zed` | Override Zed config directory |
+
+## Session Context
+
+```
+## Session Context (Zed MCP)
+
+You can manage Zed editor settings, themes, extensions, projects, and agent configuration.
+
+**Before starting work:**
+1. Check current state: zed_get_settings(), zed_list_extensions()
+2. Check what's available: zed_list_themes(), zed_get_recent_projects()
+
+**At end of work:**
+- Confirm changes took effect by re-reading settings where relevant
+```
+
+## Changelog
+
+### 0.1.0 (2026-07-15)
+- Initial release: 12 tools for Zed settings, themes, extensions, projects, and agents

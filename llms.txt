@@ -1,0 +1,17 @@
+# zed-mcp
+
+> MCP server for Zed editor — settings, extensions, themes, projects, open files.
+
+## Docs
+
+- [llms-full.txt](llms-full.txt) — Full reference
+- [README.md](README.md) — Setup and usage
+- [CHANGELOG.md](CHANGELOG.md) — Version history
+
+## Quick Start
+
+```
+uv run zed-mcp
+```
+
+Requires Python 3.11+ and Zed editor installed.

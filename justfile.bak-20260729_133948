@@ -1,0 +1,14 @@
+set windows-shell := ["powershell.exe", "-NoProfile", "-Command"]
+
+# zed-mcp
+server:
+    uv run python -m zed_mcp
+
+lint:
+    ruff check src/
+
+fmt:
+    ruff format src/
+
+lint-fix:
+    ruff check --fix src/
