@@ -1,1 +1,1 @@
-"""zed-mcp — Zed editor bridge."""
+"""zed-mcp - Zed editor bridge."""
