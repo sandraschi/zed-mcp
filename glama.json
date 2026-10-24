@@ -1,23 +1,23 @@
 {
-  "name": "zed-mcp",
-  "description": "MCP server for Zed editor — settings, themes, extensions, projects, agents",
-  "repository": "https://github.com/sandraschi/zed-mcp",
-  "runtime": "python",
-  "tools": [
-    "zed_get_settings",
-    "zed_set_setting",
-    "zed_get_theme",
-    "zed_set_theme",
-    "zed_list_themes",
-    "zed_list_extensions",
-    "zed_install_extension",
-    "zed_uninstall_extension",
-    "zed_open_file",
-    "zed_get_recent_projects",
-    "zed_version",
-    "zed_list_agents",
-    "zed_help"
-  ],
-  "categories": ["editor", "productivity"],
-  "homepage": "https://github.com/sandraschi/zed-mcp"
+	"name": "zed-mcp",
+	"description": "MCP server for Zed editor — settings, themes, extensions, projects, agents",
+	"repository": "https://github.com/sandraschi/zed-mcp",
+	"runtime": "python",
+	"tools": [
+		"zed_get_settings",
+		"zed_set_setting",
+		"zed_get_theme",
+		"zed_set_theme",
+		"zed_list_themes",
+		"zed_list_extensions",
+		"zed_install_extension",
+		"zed_uninstall_extension",
+		"zed_open_file",
+		"zed_get_recent_projects",
+		"zed_version",
+		"zed_list_agents",
+		"zed_help"
+	],
+	"categories": ["editor", "productivity"],
+	"homepage": "https://github.com/sandraschi/zed-mcp"
 }
